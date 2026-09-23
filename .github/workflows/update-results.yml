@@ -3,37 +3,41 @@ name: Update 4D Results
 on:
   workflow_dispatch:
   schedule:
-    - cron: "30 13 * * *"
+    # Every 30 minutes from 19:00-22:30 Malaysia/Singapore time
+    # (11:00-14:30 UTC), every day.
+    - cron: "0,30 11 * * *"
+    - cron: "0,30 12 * * *"
+    - cron: "0,30 13 * * *"
+    - cron: "0,30 14 * * *"
 
 permissions:
   contents: write
 
 jobs:
-  update-results:
+  update:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version: "3.11"
 
-      - name: Download latest results
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4
+
+      - name: Update results
         run: python scripts/update_results.py
 
-      - name: Save updated results
+      - name: Commit updated data
         run: |
           git config user.name "4DResultHub Bot"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
+          git config user.email "actions@users.noreply.github.com"
           git add data/*.json
-
-          if git diff --cached --quiet; then
-            echo "No new results found."
-          else
-            git commit -m "Update 4D results"
-            git push
-          fi
+          git diff --cached --quiet || git commit -m "Update 4D results"
+          git push
