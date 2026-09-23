@@ -1,5 +1,17 @@
 export default {
   async fetch(request, env) {
+
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type"
+        }
+      });
+    }
+
     const url = new URL(request.url);
 
     // Home / API information
@@ -178,6 +190,8 @@ function json(data, status = 200) {
       headers: {
         "content-type": "application/json; charset=UTF-8",
         "access-control-allow-origin": "*",
+        "access-control-allow-methods": "GET, OPTIONS",
+"access-control-allow-headers": "Content-Type",
         "cache-control": "public, max-age=300"
       }
     }
