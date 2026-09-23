@@ -29,7 +29,39 @@ export default {
     }
 
     // Latest results
-    if (url.pathname === "/api/latest") {
+    // JSONP latest results for Blogger
+if (url.pathname === "/api/latest.js") {
+  const callback = url.searchParams.get("callback");
+
+  if (!callback || !/^[A-Za-z_$][0-9A-Za-z_$]*$/.test(callback)) {
+    return new Response("Invalid callback", {
+      status: 400,
+      headers: {
+        "content-type": "text/plain; charset=UTF-8"
+      }
+    });
+  }
+
+  const results = await getAllResults(env);
+
+  const latest = {};
+
+  for (const item of results) {
+    if (!latest[item.operator]) {
+      latest[item.operator] = item;
+    }
+  }
+
+  return new Response(
+    callback + "(" + JSON.stringify(latest) + ");",
+    {
+      headers: {
+        "content-type": "application/javascript; charset=UTF-8",
+        "cache-control": "public, max-age=300"
+      }
+    }
+  );
+}
       const results = await getAllResults(env);
 
       const latest = {};
