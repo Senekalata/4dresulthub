@@ -13,6 +13,11 @@ on:
 permissions:
   contents: write
 
+# Prevent two scheduled/manual runs from trying to push at the same time.
+concurrency:
+  group: update-4d-results
+  cancel-in-progress: false
+
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -20,6 +25,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -38,6 +45,23 @@ jobs:
         run: |
           git config user.name "4DResultHub Bot"
           git config user.email "actions@users.noreply.github.com"
+
           git add data/*.json
-          git diff --cached --quiet || git commit -m "Update 4D results"
-          git push
+
+          if git diff --cached --quiet; then
+            echo "No result changes to commit."
+            exit 0
+          fi
+
+          # Bring the local checkout up to date before creating the commit.
+          git pull --rebase origin main
+
+          git add data/*.json
+          git commit -m "Update 4D results"
+
+          # Push. If another remote change arrived, rebase once and retry.
+          if ! git push origin main; then
+            echo "Push was rejected. Updating from origin and retrying..."
+            git pull --rebase origin main
+            git push origin main
+          fi
